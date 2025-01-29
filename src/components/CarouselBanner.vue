@@ -1,0 +1,39 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+
+const colors = ref(['indigo',
+          'warning',
+          'pink darken-2',
+          'red lighten-1',
+          'deep-purple accent-4',])
+const slides = ref(['First', 'Second', 'Third', 'Fourth', 'Fifth'])
+
+
+</script>
+
+<template>
+  <v-sheet class="mb-6 rounded-xl">
+  <v-carousel
+    show-arrows="hover"
+    cycle
+    hide-delimiter-background
+  >
+    <v-carousel-item
+      v-for="(slide, i) in slides"
+      :key="i"
+    >
+      <v-sheet
+        :color="colors[i]"
+        height="100%"
+      >
+        <div class="d-flex fill-height justify-center align-center">
+          <div class="text-h2">
+            {{ slide }} Slide
+          </div>
+        </div>
+      </v-sheet>
+    </v-carousel-item>
+  </v-carousel>
+</v-sheet>
+  </template>
+  <style scoped></style>
