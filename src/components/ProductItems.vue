@@ -20,6 +20,7 @@ const dialog = ref(false);
 const dialogDelete = ref(false);
 const editedIndex = ref(-1);
 const loading = ref(false);
+const file = ref<File | null>(null)
 
 const headers = ref([
   { title: '#', key: 'id' },
@@ -133,60 +134,114 @@ const closeDelete = async() => {
 
 
 const save = async () => {
-    loading.value = true;
-    try {
-        if (editedIndex.value > -1 && editedProduct.id) {
-            const { error } = await supabase
-                .from('products')
-                .update({...editedProduct})
-                .eq('id', editedProduct.id);
+  loading.value = true;
+  try {
+    if (editedIndex.value > -1 && editedProduct.id) {
+      // Update existing product
+      const { error } = await supabase
+        .from('products')
+        .update({ ...editedProduct })
+        .eq('id', editedProduct.id);
 
-            if (error) {
-                console.error('Error updating product', error);
-                return;
-            }
-                products.value = products.value.map(item =>
-                item.id === editedProduct.id ? {...editedProduct} : item
-            )
-        } else {
-          const newProduct = {
-             name: editedProduct.name,
-             category: editedProduct.category,
-             description: editedProduct.description,
-             price: editedProduct.price,
-             image: editedProduct.image,
-              sale: editedProduct.sale,
-              discount: editedProduct.discount,
-          }
-            const { error, data } = await supabase
-                .from('products')
-                .insert([newProduct])
-                .select('id');
+      if (error) {
+        console.error('Error updating product', error);
+        return;
+      }
 
-            if (error) {
-                console.error('Error inserting new product', error);
-                return;
-            }
-            if(data && data[0] && data[0].id)
-            {
-                products.value.push({...newProduct, id:data[0].id});
-                Object.assign(editedProduct, {...defaultProduct, id: undefined});
-            } else{
-                console.error('Error inserting new product. Id not found in data', data)
-            }
-        }
-    } catch (error) {
-        console.error('Error during save operation', error);
-    } finally {
-        loading.value = false;
-        close();
+      // Update the local products array
+      products.value = products.value.map((item) =>
+        item.id === editedProduct.id ? { ...editedProduct } : item
+      );
+    } else {
+      // Create new product
+      const newProduct = {
+        name: editedProduct.name,
+        category: editedProduct.category,
+        description: editedProduct.description,
+        price: editedProduct.price,
+        image: editedProduct.image, // Include the image path
+        sale: editedProduct.sale,
+        discount: editedProduct.discount,
+      };
+
+      const { error, data } = await supabase
+        .from('products')
+        .insert([newProduct])
+        .select('id');
+
+      if (error) {
+        console.error('Error inserting new product', error);
+        return;
+      }
+
+      if (data && data[0] && data[0].id) {
+        // Add the new product to the local products array
+        products.value.push({ ...newProduct, id: data[0].id });
+        Object.assign(editedProduct, { ...defaultProduct, id: undefined });
+      } else {
+        console.error('Error inserting new product. Id not found in data', data);
+      }
     }
+  } catch (error) {
+    console.error('Error during save operation', error);
+  } finally {
+    loading.value = false;
+    close();
+  }
 };
+
 
  const close = () => {
   dialog.value = false;
   Object.assign(editedProduct, {...defaultProduct, id: undefined});
   editedIndex.value = -1;
+};
+
+const handleFileUpload = async () => {
+  if (!file.value) {
+    console.error('No file selected');
+    return;
+  }
+
+  // Validate file size (e.g., 5MB limit)
+  if (file.value.size > 5 * 1024 * 1024) {
+    console.error('File size exceeds 5MB');
+    return;
+  }
+
+  // Validate file type (e.g., only images)
+  if (!file.value.type.startsWith('image/')) {
+    console.error('Only image files are allowed');
+    return;
+  }
+
+  try {
+    // Generate a unique file name
+    const fileName = `${Date.now()}-${file.value.name}`;
+
+    // Upload the file to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('product_images') // Ensure this matches your bucket name
+      .upload(fileName, file.value);
+
+    if (error) {
+      console.error('Error uploading file:', error);
+      console.error('Error details:', error.message, error.stack);
+      return;
+    }
+
+    // Save the file path to the editedProduct object
+    editedProduct.image = fileName;
+    console.log('File uploaded successfully:', data);
+  } catch (error) {
+    console.error('Error during file upload:', error);
+  }
+};
+// Function to get the public URL of an image
+const getImageUrl = (imagePath: string) => {
+  return supabase.storage
+    .from('product_images')
+    .getPublicUrl(imagePath).data.publicUrl;
 };
 
 
@@ -272,23 +327,29 @@ onMounted(() => {
                       </v-col>
 
                       <v-col cols="12">
-                            <v-file-upload
-                            browse-text="Browse Image"
-                            divider-text="Or"
-                            title="Drop image"
-                            icon="mdi-upload"
-                            class="rounded-xl"
-                            rounded
-                            show-size
-                            multiple
-                            clearable
-                            density="compact"
-                        >
-                        </v-file-upload>
-                             <v-img v-if="editedProduct.image" :src="supabase.storage.from('product_images').getPublicUrl(editedProduct.image).data.publicUrl"
-                            max-height="100px" max-width="100px"
-                             />
-                      </v-col>
+                  <!-- File Upload -->
+                  <v-file-input
+                    v-model="file"
+                    label="Upload Image"
+                    accept="image/*"
+                    prepend-icon="mdi-camera"
+                    @change="handleFileUpload"
+                    variant="outlined"
+                    show-size
+                    multiple
+                    chips
+                    clearable
+                  ></v-file-input>
+
+                  <!-- Display Uploaded Image -->
+                  <v-img
+                    v-if="editedProduct.image"
+                    :src="getImageUrl(editedProduct.image)"
+                    max-height="100px"
+                    max-width="100px"
+                    class="mt-3"
+                  ></v-img>
+                </v-col>
 
                       <v-col cols="12">
                         <v-text-field
