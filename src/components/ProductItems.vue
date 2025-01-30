@@ -273,7 +273,6 @@ onMounted(() => {
 
                       <v-col cols="12">
                             <v-file-upload
-                            @change="handleFileUpload"
                             browse-text="Browse Image"
                             divider-text="Or"
                             title="Drop image"
