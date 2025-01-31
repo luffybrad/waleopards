@@ -140,7 +140,10 @@ const save = async () => {
       // Update existing product
       const { error } = await supabase
         .from('products')
-        .update({ ...editedProduct })
+        .update({
+          ...editedProduct,
+          image: editedProduct.image // Ensure image field is included
+        })
         .eq('id', editedProduct.id);
 
       if (error) {
@@ -216,25 +219,34 @@ const handleFileUpload = async () => {
   }
 
   try {
+    loading.value = true;
+
     // Generate a unique file name
     const fileName = `${Date.now()}-${file.value.name}`;
 
     // Upload the file to Supabase Storage
     const { data, error } = await supabase.storage
-      .from('product_images') // Ensure this matches your bucket name
+      .from('product_images')
       .upload(fileName, file.value);
 
     if (error) {
-      console.error('Error uploading file:', error);
-      console.error('Error details:', error.message, error.stack);
-      return;
+      throw error;
     }
+
+    // Get the public URL of the uploaded image
+    const { data: urlData } = supabase.storage
+      .from('product_images')
+      .getPublicUrl(fileName);
 
     // Save the file path to the editedProduct object
     editedProduct.image = fileName;
-    console.log('File uploaded successfully:', data);
+
+    console.log('File uploaded successfully:', urlData.publicUrl);
   } catch (error) {
     console.error('Error during file upload:', error);
+    alert('Failed to upload image. Please try again.');
+  } finally {
+    loading.value = false;
   }
 };
 // Function to get the public URL of an image
@@ -327,29 +339,31 @@ onMounted(() => {
                       </v-col>
 
                       <v-col cols="12">
-                  <!-- File Upload -->
-                  <v-file-input
-                    v-model="file"
-                    label="Upload Image"
-                    accept="image/*"
-                    prepend-icon="mdi-camera"
-                    @change="handleFileUpload"
-                    variant="outlined"
-                    show-size
-                    multiple
-                    chips
-                    clearable
-                  ></v-file-input>
+                        <!-- File Upload -->
+                        <v-file-input
+                          v-model="file"
+                          label="Upload Image"
+                          accept="image/*"
+                          prepend-icon="mdi-camera"
+                          @change="handleFileUpload"
+                          variant="outlined"
+                          show-size
+                          chips
+                          clearable
+                          :loading="loading"
+                          :disabled="loading"
+                        ></v-file-input>
 
-                  <!-- Display Uploaded Image -->
-                  <v-img
-                    v-if="editedProduct.image"
-                    :src="getImageUrl(editedProduct.image)"
-                    max-height="100px"
-                    max-width="100px"
-                    class="mt-3"
-                  ></v-img>
-                </v-col>
+                        <!-- Display Uploaded Image -->
+                        <v-img
+                          v-if="editedProduct.image"
+                          :src="getImageUrl(editedProduct.image)"
+                          max-height="200px"
+                          max-width="200px"
+                          class="mt-3"
+                          contain
+                        ></v-img>
+                      </v-col>
 
                       <v-col cols="12">
                         <v-text-field
@@ -434,8 +448,11 @@ onMounted(() => {
           <v-chip> {{ item.category }} </v-chip>
         </template>
          <template v-slot:item.image="{ item }">
-             <v-img v-if="item.image" :src="supabase.storage.from('product_images').getPublicUrl(item.image).data.publicUrl"
-                    max-height="50px" max-width="50px"
+             <v-img
+               v-if="item.image"
+               :src="supabase.storage.from('product_images').getPublicUrl(item.image).data.publicUrl"
+               max-height="50px"
+               max-width="50px"
              />
         </template>
         <template v-slot:no-data>

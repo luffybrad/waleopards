@@ -35,7 +35,11 @@ const props = defineProps<{
             <div v-if="product.sale" class="sale-overlay">
                 On Sale
             </div>
-          <v-img :src="product.image ?  supabase.storage.from('product_images').getPublicUrl(product.image).data.publicUrl:logo" cover height="300"></v-img>
+          <v-img
+            :src="product.image ? supabase.storage.from('product_images').getPublicUrl(product.image).data.publicUrl : logo"
+            cover
+            height="300"
+          ></v-img>
 
           <v-card-title class="">
             <span class="text-pink text-h5">{{ product.name }}
