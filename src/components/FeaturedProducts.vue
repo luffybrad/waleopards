@@ -2,7 +2,9 @@
 import { ref } from 'vue';
 import logo from '@/assets/images/waleopardlogo.jpeg';
 import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'vue-router';
 
+const router = useRouter();
 
 interface Product {
   id?: number;
@@ -14,10 +16,20 @@ interface Product {
   sale: boolean;
   discount: number;
 }
+
 const props = defineProps<{
     products:Product[]
 }>()
 
+const getImageUrl = (imagePath: string) => {
+  return supabase.storage
+    .from('product_images')
+    .getPublicUrl(imagePath).data.publicUrl;
+};
+
+const navigateToProduct = (productId: number) => {
+  router.push({ name: 'product', params: { id: productId } });
+};
 </script>
 
 <template>
@@ -31,12 +43,17 @@ const props = defineProps<{
         md="4"
         sm="6"
       >
-        <v-card class="rounded-xl mb-5 product-card" elevation="10">
+        <v-card
+          class="rounded-xl mb-5 product-card"
+          elevation="10"
+          @click="navigateToProduct(product.id)"
+          style="cursor: pointer;"
+        >
             <div v-if="product.sale" class="sale-overlay">
                 On Sale
             </div>
           <v-img
-            :src="product.image ? supabase.storage.from('product_images').getPublicUrl(product.image).data.publicUrl : logo"
+            :src="product.image ? getImageUrl(product.image) : logo"
             cover
             height="300"
           ></v-img>
@@ -101,6 +118,7 @@ const props = defineProps<{
               <v-col cols="12" class="d-flex justify-space-between">
                 <v-btn class="d-flex rounded-xl bg-pink"
                 density="comfortable"
+                @click.stop
                 >
                   <span>
                     Add to Cart <v-icon> mdi-cart </v-icon>

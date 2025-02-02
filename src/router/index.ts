@@ -6,6 +6,8 @@ import NotFoundView from '@/views/NotFoundView.vue'
 import AdminView from '@/views/Admin/AdminHome.vue'
 import CategoryView from '@/views/CategoryView.vue'
 import SalesView from '@/views/SalesView.vue'
+import SearchView from '@/views/SearchView.vue'
+import ProductView from '@/views/ProductView.vue'
 
 
 const router = createRouter({
@@ -37,6 +39,11 @@ const router = createRouter({
       component: SignUpView,
     },
     {
+      path: '/search',
+      name: 'search',
+      component: SearchView,
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: NotFoundView,
@@ -45,7 +52,12 @@ const router = createRouter({
       path: '/admin',
       name: 'admin',
       component: AdminView
-    }
+    },
+    {
+      path: '/product/:id',
+      name: 'product',
+      component: ProductView,
+    },
   ],
 })
 
