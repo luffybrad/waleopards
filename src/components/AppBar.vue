@@ -2,15 +2,25 @@
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import logo from '@/assets/images/waleopardlogo.jpeg';
-import { useProductsStore } from '@/stores/products';
 import { supabase } from '@/lib/supabaseClient';
+import { useCartStore } from '@/stores/cart';
+import CartDialog from './CartDialog.vue';
+
+// Add this interface near the top of the script
+interface Product {
+  id: number;
+  name: string;
+  image: string;
+  category: string;
+}
 
 const router = useRouter();
 const drawer = ref(false);
 const searchOverlay = ref(false);
 const searchQuery = ref('');
-const suggestions = ref([]);
-const productsStore = useProductsStore();
+const suggestions = ref<Product[]>([]);
+const cartStore = useCartStore();
+const cartDialog = ref(false);
 
 const items = [
   { title: 'Home', route: '/', icon: 'mdi-home' },
@@ -49,7 +59,7 @@ const performSearch = () => {
   }
 };
 
-const selectSuggestion = (product) => {
+const selectSuggestion = (product: Product) => {
   router.push({ name: 'product', params: { id: product.id } });
   searchOverlay.value = false;
   searchQuery.value = '';
@@ -57,6 +67,7 @@ const selectSuggestion = (product) => {
 };
 
 const getImageUrl = (imagePath: string) => {
+  if (!imagePath) return '';
   return supabase.storage
     .from('product_images')
     .getPublicUrl(imagePath).data.publicUrl;
@@ -95,8 +106,9 @@ const getImageUrl = (imagePath: string) => {
         icon
         class="text-pink"
         size="small"
+        @click="cartDialog = true"
       >
-        <v-badge color="pink" :content="8">
+        <v-badge color="pink" :content="cartStore.totalItems">
           <v-icon>mdi-cart</v-icon>
         </v-badge>
       </v-btn>
@@ -147,6 +159,7 @@ const getImageUrl = (imagePath: string) => {
           variant="outlined"
           density="comfortable"
           autofocus
+          @keyup.enter="performSearch"
         ></v-text-field>
 
         <v-list v-if="suggestions.length > 0" class="mt-3">
@@ -188,6 +201,9 @@ const getImageUrl = (imagePath: string) => {
       </v-card-text>
     </v-card>
   </v-overlay>
+
+  <!-- Cart Dialog -->
+  <CartDialog v-model="cartDialog" />
 </template>
 
 <style scoped>

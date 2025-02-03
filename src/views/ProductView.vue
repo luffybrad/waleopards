@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { useProductsStore } from '@/stores/products';
 import { supabase } from '@/lib/supabaseClient';
+import { useCartStore } from '@/stores/cart';
 
 const route = useRoute();
-const productsStore = useProductsStore();
 const product = ref(null);
 const loading = ref(true);
+const cartStore = useCartStore();
 
 onMounted(async () => {
   const productId = Number(route.params.id);
@@ -34,6 +34,19 @@ const getImageUrl = (imagePath: string) => {
     .from('product_images')
     .getPublicUrl(imagePath).data.publicUrl;
 };
+
+const addToCart = () => {
+  if (product.value) {
+    cartStore.addToCart({
+      id: product.value.id,
+      name: product.value.name,
+      price: product.value.price,
+      image: product.value.image,
+      sale: product.value.sale,
+      discount: product.value.discount
+    });
+  }
+};
 </script>
 
 <template>
@@ -54,10 +67,19 @@ const getImageUrl = (imagePath: string) => {
         <v-chip class="mb-4" color="pink" variant="outlined">
           {{ product.category }}
         </v-chip>
-        <p class="text-h5 mb-4">Ksh {{ product.price }}</p>
+        <div class="price-section">
+          <template v-if="product?.sale && product?.discount">
+            <span class="text-h4 text-decoration-line-through me-2">Ksh {{ product.price }}</span>
+            <span class="text-h4 text-pink">Ksh {{ product.price - product.discount }}</span>
+          </template>
+          <template v-else>
+            <span class="text-h4">Ksh {{ product?.price }}</span>
+          </template>
+        </div>
         <p class="text-body-1 mb-4">{{ product.description }}</p>
-        <v-btn color="pink" size="large" class="mt-4">
+        <v-btn color="pink" size="large" class="mt-4" @click="addToCart">
           Add to Cart
+          <v-icon right>mdi-cart</v-icon>
         </v-btn>
       </v-col>
     </v-row>
