@@ -42,8 +42,8 @@ const navigateToProduct = (productId: number) => {
   router.push({ name: 'product', params: { id: productId.toString() } });
 };
 
-const addToCart = (product: Product, event: Event) => {
-  event.stopPropagation(); // Prevent navigation when clicking the add to cart button
+const addToCart = (product: Product, event: MouseEvent) => {
+  event.stopPropagation();
   if (!product.id) return;
 
   cartStore.addToCart({
@@ -137,7 +137,7 @@ const addToCart = (product: Product, event: Event) => {
                 <v-btn
                   class="rounded-xl bg-pink"
                   density="comfortable"
-                  @click="(e) => addToCart(product, e)"
+                  @click="($event: MouseEvent) => addToCart(product, $event)"
                 >
                   Add to Cart
                   <v-icon class="ml-2">mdi-cart</v-icon>

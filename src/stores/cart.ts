@@ -11,6 +11,15 @@ interface CartItem {
   discount?: number;
 }
 
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  image: string;
+  sale?: boolean;
+  discount?: number;
+}
+
 export const useCartStore = defineStore('cart', () => {
   const items = ref<CartItem[]>([]);
 
@@ -27,7 +36,7 @@ export const useCartStore = defineStore('cart', () => {
     }, 0);
   });
 
-  function addToCart(product: any) {
+  function addToCart(product: Product) {
     const existingItem = items.value.find(item => item.id === product.id);
     if (existingItem) {
       existingItem.quantity++;

@@ -5,7 +5,19 @@ import { supabase } from '@/lib/supabaseClient';
 import { useCartStore } from '@/stores/cart';
 
 const route = useRoute();
-const product = ref(null);
+
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+  description: string;
+  sale: boolean;
+  discount: number;
+}
+
+const product = ref<Product | null>(null);
 const loading = ref(true);
 const cartStore = useCartStore();
 

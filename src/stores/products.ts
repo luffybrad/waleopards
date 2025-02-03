@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 interface Product {
   id: number;
   name: string;
-  image_url: string;
+  image: string;
   category: string;
   description: string;
   price: number;
@@ -34,7 +34,10 @@ export const useProductsStore = defineStore('products', () => {
                 return;
             }
            if(data) {
-               products.value = data;
+               products.value = data.map(item => ({
+                   ...item,
+                   image: item.image_url
+               }));
            }
         } catch (e:any) {
             console.error('An unexpected error occured:', e);
